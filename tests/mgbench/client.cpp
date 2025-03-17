@@ -80,7 +80,7 @@ std::string bolt_value_to_string(const communication::bolt::Value& v, int indent
 
   std::stringstream ss;
   bool ssu = false;
-  bool f = true;
+  bool f = true; // To format the output
 
   using Type = communication::bolt::Value::Type;
 
@@ -145,6 +145,20 @@ std::string bolt_value_to_string(const communication::bolt::Value& v, int indent
         r = r + "\n})";
       }
       break;
+    case Type::Edge:
+      {
+        auto& edge = v.ValueEdge();
+        r = fmt::format("Edge([ID: {}, [FROM: {} --- TO: {}]\n", edge.id.AsInt(), edge.from.AsInt(), edge.to.AsInt());
+        
+        r = r + "\n[Type:" + edge.type + "]\n";
+
+        for (auto [key,value]: edge.properties){
+          r = r + "\n\t" + (!f ? "," : "") + key + ":" + bolt_value_to_string(value, indent);
+          f = false;
+        }
+        r = r + "\n)";
+      }
+      break;
     default:
       r = "Unhandled";
   }
@@ -154,7 +168,7 @@ std::string bolt_value_to_string(const communication::bolt::Value& v, int indent
 
   std::string indents = "";
 
-  for (int i = 0; i!= indent; ++i) {
+  for (int i = 0; i != indent; ++i) {
     indents += "\t";
   }
 

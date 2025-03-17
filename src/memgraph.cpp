@@ -304,6 +304,8 @@ int64_t GetMemoryLimit() {
       *maybe_total_memory *= 9;
       *maybe_total_memory /= 10;
     }
+    
+    // std::cout<<"Memory Usage: " << std::to_string(maybe_total_memory.value_or(0)) << "\n";
     return *maybe_total_memory * 1024;
   }
 

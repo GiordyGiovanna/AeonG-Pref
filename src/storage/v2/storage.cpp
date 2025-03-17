@@ -3636,6 +3636,10 @@ void Storage::CollectGarbage() {
     for (Delta &delta : transaction->deltas) {
       while (true) {
         auto prev = delta.prev.Get();
+        if (prev.vertex != nullptr)
+          std::cout << "Doing:" << std::to_string(prev.vertex->gid.AsInt()) <<"\n";
+        else
+          std::cout << "Non è stato possibile leggere il vertice\n";
         switch (prev.type) {
           case PreviousPtr::Type::VERTEX: {
             Vertex *vertex = prev.vertex;
