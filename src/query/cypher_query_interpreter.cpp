@@ -182,9 +182,9 @@ std::unique_ptr<LogicalPlan> MakeLogicalPlan(AstStorage ast_storage, CypherQuery
   auto planning_context = plan::MakePlanningContext(&ast_storage, &symbol_table, query, &vertex_counts);
   auto [root, cost] = plan::MakeLogicalPlan(&planning_context, parameters, FLAGS_query_cost_planner);
   //hjm begin
-  auto history_info=planning_context.history_info_;
+  auto history_info = planning_context.history_info_;
   //hjm end
-  auto vt_info=planning_context.vt_infos_;
+  auto vt_info = planning_context.vt_infos_;
   return std::make_unique<SingleNodeLogicalPlan>(std::move(root), cost, std::move(ast_storage),
                                                  std::move(symbol_table),history_info, vt_info);
 }

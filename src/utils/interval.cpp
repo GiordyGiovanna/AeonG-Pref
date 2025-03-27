@@ -55,8 +55,6 @@ namespace utils {
     ValuedTimelineInsertion(from_to, false, _container_interval, value);
   }
 
-
-
   template<typename T>
   void valued_timeline<T>::remove(TimeSpan from_to) {
     ValuedTimelineInsertion(from_to, true, _container_interval, T());
@@ -259,8 +257,6 @@ namespace utils {
   size_t valued_timeline<T>::size() const {
     return std::distance(_container_interval.begin(), _container_interval.end());
   }
-
-
 
   void timeline::add(TimeSpan from_to) {
     TimelineInsertion(from_to, false, _container_interval);

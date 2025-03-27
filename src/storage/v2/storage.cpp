@@ -439,19 +439,13 @@ Storage::Storage(Config config)
       epoch_id_(utils::GenerateUUID()),
       global_locker_(file_retainer_.AddLocker()) {
 
-  std::cout << "\nVertex: " << sizeof(Vertex)
-            << "\nEdge: " << sizeof(Edge)
-            << "\nDelta: " << sizeof(Delta)
-            << "\nVtStore: " << sizeof(VtStore)
-            << "\nVtStore*: "<< sizeof(VtStore*)
-            << "\nPropertyValue: " << sizeof(PropertyValue)
-            << "\nutils::timeline:" << sizeof(utils::timeline) << std::endl;
-        //hjm begin
-      // saved_history_deltas_.init(config_.durability.storage_directory/"history_deltas");
-         saved_history_deltas_.emplace(config_.durability.storage_directory/"history_deltas",config_.items.realTimeFlag);
-        //recover kv's time_table index
-        // saved_history_deltas_->GetTimeTableAll(); //hjm begin timetable
-        //hjm end
+  std::cout << "\n Memgraph is now running" << std::endl;
+  //hjm begin
+  // saved_history_deltas_.init(config_.durability.storage_directory/"history_deltas");
+   saved_history_deltas_.emplace(config_.durability.storage_directory/"history_deltas",config_.items.realTimeFlag);
+  //recover kv's time_table index
+  // saved_history_deltas_->GetTimeTableAll(); //hjm begin timetable
+  //hjm end
   if (config_.durability.snapshot_wal_mode != Config::Durability::SnapshotWalMode::DISABLED ||
       config_.durability.snapshot_on_exit || config_.durability.recover_on_startup) {
     // Create the directory initially to crash the database in case of
@@ -3710,12 +3704,10 @@ void Storage::CollectGarbage() {
               continue;
             }
 
-            if (vertex != nullptr)
-              if (vertex->has_vt)
-                EncodeIntoVtStore(&delta, vertex);
-            if (edge != nullptr)
-              if (edge->has_vt)
-                EncodeIntoVtStore(&delta,edge);
+            if (vertex != nullptr && vertex->has_vt)
+              EncodeIntoVtStore(&delta, vertex);
+            if (edge != nullptr && edge->has_vt)
+              EncodeIntoVtStore(&delta,edge);
 
             if (breakBefore)
               break;

@@ -79,10 +79,11 @@
   }
 
 namespace history_delta{
-extern bool TemporalCheck(uint64_t object_ts,uint64_t object_te,uint64_t c_ts,uint64_t c_te,utils::TemporalQueryType type);
+extern bool check_vertex_valid_time(query::VertexAccessor &vertex, utils::TemporalFilter filter);
+/// extern bool TemporalCheck(uint64_t object_ts,uint64_t object_te,uint64_t c_ts,uint64_t c_te,utils::TemporalQueryType type);
 extern std::pair<std::vector< std::tuple< std::map<storage::PropertyId,storage::PropertyValue>,uint64_t,uint64_t> >,bool> getDeadInfo2(query::VertexAccessor current_vertex_,uint64_t c_ts,uint64_t c_te,utils::TemporalQueryType types_);
 extern std::pair<std::vector< std::tuple< std::map<storage::PropertyId,storage::PropertyValue>,uint64_t,uint64_t, utils::TimeSpan> >,bool> getDeadInfo2(query::VertexAccessor current_vertex_,uint64_t c_ts,uint64_t c_te,utils::TemporalQueryType types_, const utils::TemporalFilter vt_filter);
-extern  std::vector<std::string> splits(const std::string &str, const std::string &pattern);
+extern std::vector<std::string> splits(const std::string &str, const std::string &pattern);
 };
 
 namespace EventCounter {
@@ -404,20 +405,26 @@ VertexAccessor &CreateExpand::CreateExpandCursor::OtherVertex(Frame &frame, Exec
   }
 }
 
-bool addHistoryVertex(query::VertexAccessor &current_vertex_,history_delta::HistoryContext &historyContext_,std::list<TypedValue> &history_add_,ExecutionContext &context,bool edge_expand){
-    uint64_t obj_ts=current_vertex_.transaction_st();
-    uint64_t obj_te=current_vertex_.tt_te();
-    bool delete_flag=false;
-    storage::Delta* current_Deltas=current_vertex_.getDeltas();
-    if(current_Deltas!= nullptr){
-        if(current_Deltas->commit_timestamp==0){
-          delete_flag=true;
+bool addHistoryVertex(
+  query::VertexAccessor &current_vertex_,
+  history_delta::HistoryContext &historyContext_,
+  std::list<TypedValue> &history_add_,
+  ExecutionContext &context,
+  bool edge_expand){
+    uint64_t obj_ts = current_vertex_.transaction_st();
+    uint64_t obj_te = current_vertex_.tt_te();
+    bool delete_flag = false;
+    storage::Delta* current_Deltas = current_vertex_.getDeltas();
+    if(current_Deltas != nullptr){
+        if(current_Deltas -> commit_timestamp==0){
+          delete_flag = true;
         }
     }
-    if(!delete_flag && !history_delta::TemporalCheck(obj_ts,obj_te,historyContext_.c_ts,historyContext_.c_te,historyContext_.types)){//Delete a node in the current database
+    if(!delete_flag && !history_delta::TemporalCheck(obj_ts,obj_te, historyContext_.c_ts, historyContext_.c_te, historyContext_.types)){//Delete a node in the current database
         delete_flag=true;
     }
-    if(!delete_flag && obj_ts>=obj_te) delete_flag=true;
+    if(!delete_flag && obj_ts>=obj_te)
+      delete_flag=true;
   
     if(!delete_flag){
         auto values=TypedValue(current_vertex_);
@@ -431,7 +438,7 @@ bool addHistoryVertex(query::VertexAccessor &current_vertex_,history_delta::Hist
     storage::HistoryVertex current_vertex1;
     bool history_flag=false;
 
-    auto [dead_deltas,need_deleted_flag]=history_delta::getDeadInfo2(current_vertex_,historyContext_.c_ts, historyContext_.c_te,historyContext_.types, historyContext_.vt);
+    auto [dead_deltas,need_deleted_flag] = history_delta::getDeadInfo2(current_vertex_,historyContext_.c_ts, historyContext_.c_te,historyContext_.types, historyContext_.vt);
     for (auto dead_delta:dead_deltas){
         current_vertex1=context.db_accessor->CreateHistoryVertexFromDelta((current_vertex_).impl_,dead_delta,historyContext_);
         history_flag=true;
@@ -501,30 +508,29 @@ class ScanAllCursor : public Cursor {
 
   
   bool Pull(Frame &frame, ExecutionContext &context) override {
-    
     SCOPED_PROFILE_OP(op_name_);
 
     if (MustAbort(context)) throw HintedAbortError();
 
     if(context.addition){
-      if(count==0){
+      if(count == 0){
         context.scan_op_name=op_name_;
         context.input_symbol=output_symbol_;
 
         const auto ts=static_cast<uint64_t>(*context.addition);
         const auto te=static_cast<uint64_t>(*context.addition_right);
 
-        historyContext_.c_ts=ts;//ts
-        historyContext_.c_te=te;//te
-        historyContext_.types= ts==te? utils::TemporalQueryType::AS_OF : utils::TemporalQueryType::FROM_TO;
-        historyContext_.vt=context.addition_vt;
+        historyContext_.c_ts = ts;//ts
+        historyContext_.c_te = te;//te
+        historyContext_.types = ts == te? utils::TemporalQueryType::AS_OF : utils::TemporalQueryType::FROM_TO;
+        historyContext_.vt = context.addition_vt;
         count++;
       }
 
       while(true){
         if(!history_add.empty()){
           auto maybe_vertex= history_add.front();
-          frame[output_symbol_] = maybe_vertex;//*maybe_vertex;
+          frame[output_symbol_] = maybe_vertex; // *maybe_vertex;
           history_add.pop_front();
           input_cursor_->Pull(frame, context);
           return true;
@@ -542,7 +548,7 @@ class ScanAllCursor : public Cursor {
           vertices_.emplace(std::move(next_vertices.value()));
           vertices_it_.emplace(vertices_.value().begin());
         }
-        auto current_vertex=*vertices_it_.value();
+        auto current_vertex = *vertices_it_.value();
         addHistoryVertex(current_vertex,historyContext_,history_add,context,false);
         // std::cout <<
         ++vertices_it_.value();
@@ -561,10 +567,27 @@ class ScanAllCursor : public Cursor {
         if (!next_vertices){
           continue;
         }
+        VertexAccessor maybe_vertex = *vertices_it_.value();
+
+        ///////// CHECK HERE
         vertices_.emplace(std::move(next_vertices.value()));
-        vertices_it_.emplace(vertices_.value().begin());
+        if (context.addition_vt.has_value() && maybe_vertex.HasTemporalFeatures()){
+          if (history_delta::check_vertex_valid_time(maybe_vertex, context.addition_vt)) {
+            vertices_it_.emplace(vertices_.value().begin());
+          }
+        } else {
+          vertices_it_.emplace(vertices_.value().begin());
+        }
       }
-      frame[output_symbol_] = *vertices_it_.value();
+      auto maybe_vertex = *vertices_it_.value();
+      // if (context.addition_vt.has_value()){
+      //   if (history_delta::check_vertex_valid_time(maybe_vertex, context.addition_vt)) {
+      //     frame[output_symbol_] = maybe_vertex;
+      //   }
+      // } else {
+      //   frame[output_symbol_] = maybe_vertex;
+      // }
+      frame[output_symbol_] = maybe_vertex;
       ++vertices_it_.value();
       return true;
     }

@@ -13,7 +13,6 @@ namespace {
 enum class ObjectType : uint8_t { MAP, TEMPORAL_DATA };
 }  // namespace
 
-  static const int k_i_SegmentPrefix = 0;
   static const int k_i_Gid = 1;
   static const int k_i_TT_s = 2;
   static const int k_i_TT_e = 3;
@@ -76,8 +75,10 @@ nlohmann::json SerializePropertyValueMap(const std::map<std::string, storage::Pr
 };
 
 //help functions
-bool TemporalCheck(uint64_t object_ts,uint64_t object_te,uint64_t c_ts,uint64_t c_te,const utils::TemporalQueryType& type){
+bool TemporalCheck(uint64_t object_ts, uint64_t object_te,uint64_t c_ts,uint64_t c_te,const utils::TemporalQueryType& type){
   switch (type) {
+    case utils::TemporalQueryType::NONE: // Special VT case (needs to check for vt but does not need tt check)
+      return true;
     case utils::TemporalQueryType::AS_OF:
       return object_ts <= c_ts & object_te > c_te;
     case utils::TemporalQueryType::FROM_TO:
@@ -89,6 +90,10 @@ bool TemporalCheck(uint64_t object_ts,uint64_t object_te,uint64_t c_ts,uint64_t 
   }
 }
 
+[[nodiscard]] bool check_vertex_valid_time (query::VertexAccessor &vertex, utils::TemporalFilter filter) {
+  auto maybe_vt = vertex.ObjectVt(storage::View::NEW, filter);
+  return maybe_vt.HasValue() && maybe_vt.GetValue().size() > 0;
+}
 
 std::vector<std::string> splits(const std::string &str, const std::string &pattern){
     std::vector<std::string> res;
@@ -722,16 +727,15 @@ std::pair<std::vector< std::tuple< std::map<storage::PropertyId,storage::Propert
   auto maybe_properties=current_vertex_.impl_.getProperties();
   bool delta_is_edge=false;
 
-
   while (vertex_deltas != nullptr) {
     utils::TimeSpan delta_vt = vertex_deltas->vt;
 
-    if (!vt_filter.matches(vertex_deltas->vt.first, vertex_deltas->vt.second)) {
+    if (!vt_filter.matches(delta_vt.first, delta_vt.second)) {
       vertex_deltas = vertex_deltas->next.load(std::memory_order_acquire);
       continue;
     }
 
-    delta_is_edge=false;
+    delta_is_edge = false;
     switch (vertex_deltas->action) {
       case storage::Delta::Action::ADD_OUT_EDGE:
       case storage::Delta::Action::REMOVE_OUT_EDGE:
@@ -755,12 +759,12 @@ std::pair<std::vector< std::tuple< std::map<storage::PropertyId,storage::Propert
     auto transaction_te=vertex_deltas->commit_timestamp!=0?vertex_deltas->commit_timestamp:std::numeric_limits<uint64_t>::max();
 
     //Skip uncommitted nodes - Nodes built at the beginning
-    if(transaction_ts> transaction_te &&  delta_is_edge && transaction_te!=std::numeric_limits<uint64_t>::max()) {
+    if(transaction_ts> transaction_te && delta_is_edge && transaction_te!=std::numeric_limits<uint64_t>::max()) {
       vertex_deltas = vertex_deltas->next.load(std::memory_order_acquire);
       continue;
     }//The data of the vertices is required. delta is the edge.
 
-    if(TemporalCheck(transaction_ts,transaction_te,c_ts,c_te,types_)){//&TemporalCheck(tmp_ts,tmp_te,c_ts,c_te,types)
+    if(TemporalCheck(transaction_ts,transaction_te, c_ts, c_te, types_)){//&TemporalCheck(tmp_ts,tmp_te,c_ts,c_te,types)
       res.emplace_back(maybe_properties,transaction_ts,transaction_te, delta_vt);
       if(types_==utils::TemporalQueryType::AS_OF) {//If it is a time point, it will be returned directly and there is no need to traverse the records of delted history.
         need_deleted_flag=false;

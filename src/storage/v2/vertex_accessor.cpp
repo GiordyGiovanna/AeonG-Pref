@@ -1877,7 +1877,6 @@ utils::valued_timeline<storage::PropertyValue> VertexAccessor::PropertyTimeline(
   auto before_delta= vertex_->delta;
 
   while (before_delta != nullptr){
-    bool delta_is_edge=false;
     switch (before_delta->action) {
       case storage::Delta::Action::SET_PROPERTY: {
         if (before_delta->property.key == property_id) {
@@ -1902,7 +1901,6 @@ utils::timeline VertexAccessor::LabelTimeline(storage::LabelId label_id, const u
 
   auto before_delta= vertex_->delta;
   while (before_delta != nullptr){
-    bool delta_is_edge=false;
     switch (before_delta->action) {
       case storage::Delta::Action::ADD_LABEL: {
         if (before_delta->label != label_id)
