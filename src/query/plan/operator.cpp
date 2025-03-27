@@ -506,7 +506,6 @@ class ScanAllCursor : public Cursor {
 
     if (MustAbort(context)) throw HintedAbortError();
 
-  
     if(context.addition){
       if(count==0){
         context.scan_op_name=op_name_;
@@ -561,7 +560,7 @@ class ScanAllCursor : public Cursor {
         auto next_vertices = get_vertices_(frame, context);//makecursor function defined to get nodes
         if (!next_vertices){
           continue;
-        } 
+        }
         vertices_.emplace(std::move(next_vertices.value()));
         vertices_it_.emplace(vertices_.value().begin());
       }
@@ -2791,7 +2790,6 @@ ACCEPT_WITH_INPUT(Produce)
 
 UniqueCursorPtr Produce::MakeCursor(utils::MemoryResource *mem) const {
   EventCounter::IncrementCounter(EventCounter::ProduceOperator);
-
   return MakeUniqueCursorPtr<ProduceCursor>(mem, *this, mem);
 }
 
@@ -2816,12 +2814,10 @@ storage::HistoryVertex createHistoryVertexFromVertex(VertexAccessor &vertex, con
       if (props_timespans.second == storage::PropertyValue())
         continue;
       values.emplace_back(props_timespans);
-
     }
     if (!values.empty()) {
       history_vertex.properties.emplace(props.first, values);
     }
-
   }
 
   utils::timeline object_timeline = vertex.ObjectVt(storage::View::NEW, filter).GetValue();
@@ -2843,10 +2839,7 @@ storage::HistoryVertex createHistoryVertexFromVertex(VertexAccessor &vertex, con
     auto labels_val = labels.GetValue();
     history_vertex.labels.insert(history_vertex.labels.end(), labels_val.begin(), labels_val.end());
   }
-
-
   return history_vertex;
-
 }
 
 bool Produce::ProduceCursor::Pull(Frame &frame, ExecutionContext &context) {
@@ -2856,7 +2849,9 @@ bool Produce::ProduceCursor::Pull(Frame &frame, ExecutionContext &context) {
     // Produce should always yield the latest results.
     ExpressionEvaluator evaluator(&frame, context.symbol_table, context.evaluation_context, context.db_accessor,
                                   storage::View::NEW);
-    for (auto named_expr : self_.named_expressions_) named_expr->Accept(evaluator);
+
+    for (auto named_expr : self_.named_expressions_)
+      named_expr->Accept(evaluator);
 
     for (int i = 0; i != frame.elems().size(); i++) {
       if (frame.elems()[i].IsVertex()) {
@@ -2864,10 +2859,7 @@ bool Produce::ProduceCursor::Pull(Frame &frame, ExecutionContext &context) {
         if (vertex.HasTemporalFeatures())
           frame.elems().at(i) = createHistoryVertexFromVertex(vertex, context.addition_vt, *context.db_accessor);
       }
-
     }
-
-
     return true;
   }
   return false;

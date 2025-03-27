@@ -72,7 +72,6 @@ nlohmann::json SerializePropertyValueMap(const std::map<std::string, storage::Pr
   }
 
   data.emplace("value", data_value);
-
   return data;
 };
 
@@ -80,11 +79,11 @@ nlohmann::json SerializePropertyValueMap(const std::map<std::string, storage::Pr
 bool TemporalCheck(uint64_t object_ts,uint64_t object_te,uint64_t c_ts,uint64_t c_te,const utils::TemporalQueryType& type){
   switch (type) {
     case utils::TemporalQueryType::AS_OF:
-      return object_ts<=c_ts & object_te>c_te;
+      return object_ts <= c_ts & object_te > c_te;
     case utils::TemporalQueryType::FROM_TO:
-      return object_ts<c_te & object_te>c_ts;
+      return object_ts < c_te & object_te > c_ts;
     case utils::TemporalQueryType::BETWEEN_AND:
-      return object_ts<=c_te & object_te>c_ts;
+      return object_ts <= c_te & object_te > c_ts;
     default:
       return false;
   }

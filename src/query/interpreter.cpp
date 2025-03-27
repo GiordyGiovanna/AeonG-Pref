@@ -1200,7 +1200,6 @@ PreparedQuery PrepareCypherQuery(ParsedQuery parsed_query, std::map<std::string,
 
     header.push_back(
         utils::FindOr(parsed_query.stripped_query.named_expressions(), symbol.token_position(), symbol.name()).first);
-    
   }
   //wzy edit
   // interpreter_context->addition=parsed_query.stripped_query.addition();

@@ -254,7 +254,6 @@ class VertexAccessor final {
 
   auto PropertiesVt(storage::View view, const utils::TemporalFilter& vt) const {
     auto a = impl_.AllPropertiesTimeline(view, vt);
-
     return a;
   }
 

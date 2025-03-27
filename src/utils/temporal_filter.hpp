@@ -42,7 +42,8 @@ namespace utils{
       TemporalFilter():type(TemporalQueryType::NONE),first(VTDateTime::min()),second(VTDateTime::max()){}
 
       bool matches(const VTDateTime& t1, const VTDateTime& t2) const {
-        switch (type) {
+          switch (type) {
+          /// First e second are Query parameters "FROM first TO second"
           case TemporalQueryType::NONE:
             return true;
           case TemporalQueryType::AS_OF:

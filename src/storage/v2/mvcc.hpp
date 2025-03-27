@@ -101,9 +101,11 @@ inline void ApplyDeltasForRead(Transaction *transaction, const Delta *delta, Vie
     // id value, that the change is committed.
     //
     // For READ UNCOMMITTED -> we accept any change.
-    if ((transaction->isolation_level == IsolationLevel::SNAPSHOT_ISOLATION && ts < transaction->start_timestamp) ||
-        (transaction->isolation_level == IsolationLevel::READ_COMMITTED && ts < kTransactionInitialId) ||
-        (transaction->isolation_level == IsolationLevel::READ_UNCOMMITTED)) {
+    bool skip_delta = transaction->isolation_level == IsolationLevel::SNAPSHOT_ISOLATION && ts < transaction->start_timestamp;
+    skip_delta = skip_delta || transaction->isolation_level == IsolationLevel::READ_COMMITTED && ts < kTransactionInitialId;
+    skip_delta = skip_delta || transaction->isolation_level == IsolationLevel::READ_UNCOMMITTED;
+    skip_delta = skip_delta && delta->action != Delta::Action::SET_PROPERTY;
+    if (skip_delta) {
       break;
     }
 
@@ -120,12 +122,12 @@ inline void ApplyDeltasForRead(Transaction *transaction, const Delta *delta, Vie
     }
 
     // Deltas with vt outside the requested range are discarded
-    if (!vt.matches(delta_vt.first,delta_vt.second)) {
+    if (!vt.matches(delta_vt.first, delta_vt.second)) {
       break;
     }
 
     // This delta must be applied, call the callback with the sliced interval.
-    callback(*delta,delta_vt.intersect(utils::TimeSpan(vt.first,vt.second)));
+    callback(*delta, delta_vt.intersect(utils::TimeSpan(vt.first, vt.second)));
 
     // Move to the next delta.
     delta = delta->next.load(std::memory_order_acquire);

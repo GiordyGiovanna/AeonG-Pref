@@ -1173,8 +1173,10 @@ Result<PropertyValue> VertexAccessor::GetProperty(PropertyId property, View view
         break;
     }
   });
-  if (!exists) return Error::NONEXISTENT_OBJECT;
-  if (!for_deleted_ && deleted) return Error::DELETED_OBJECT;
+  if (!exists)
+    return Error::NONEXISTENT_OBJECT; //// QUAAAAAAAAAAAA
+  if (!for_deleted_ && deleted)
+    return Error::DELETED_OBJECT;
   return std::move(value);
 }
 
@@ -1363,15 +1365,15 @@ std::map<PropertyId, utils::valued_timeline<PropertyValue>> VertexAccessor::AllP
 
   std::map<PropertyId, utils::valued_timeline<PropertyValue>> properties;
 
+
   for (auto& property : vertex_->get_vt_store().Properties()) {
     utils::valued_timeline<PropertyValue> vt_range_prop = PropertyTimeline(property, vt.get_span());
-
     properties.emplace(property, vt_range_prop);
   }
   for (auto& property : vertex_->properties.Properties()) {
     if (properties.find(property.first) == properties.end()) {
       utils::valued_timeline<PropertyValue> vt;
-      vt.add(utils::TimeSpan(), property.second);
+      // vt.add(utils::TimeSpan(), property.second);
       properties.emplace(property.first, vt);
     }
   }
@@ -1383,17 +1385,16 @@ std::map<PropertyId, utils::valued_timeline<PropertyValue>> VertexAccessor::AllP
       case Delta::Action::SET_PROPERTY: {
         auto it = properties.find(delta.property.key);
         if (it != properties.end()) {
-          if (delta.property.value.IsNull()) {
+          if (delta.property.new_value.IsNull()) {
             // remove the property
             properties[delta.property.key].remove(vt_intersection);
           } else {
             // set the value
-            properties[delta.property.key].add(vt_intersection, delta.property.value);
+            properties[delta.property.key].add(vt_intersection, delta.property.new_value);
           }
         } else if (!delta.property.value.IsNull()) {
           utils::valued_timeline<PropertyValue> vt_range_prop(vt.get_span());
           vt_range_prop.add(vt_intersection, delta.property.value);
-
           properties.emplace(delta.property.key, vt_range_prop);
         }
         break;
@@ -1441,7 +1442,6 @@ Result<utils::timeline> VertexAccessor::AllObjectTimeline(View view, const utils
   ApplyDeltasForRead(transaction_, delta, view, vt, [&vt_range_obj](const Delta &delta, utils::TimeSpan vt_intersection) {
     switch (delta.action) {
       case Delta::Action::SET_PROPERTY: {
-
         break;
       }
       case Delta::Action::DELETE_OBJECT: {

@@ -3357,6 +3357,7 @@ Transaction Storage::CreateTransaction(IsolationLevel isolation_level) {
 
 template <bool force>
 void Storage::CollectGarbage() {
+  std::cout << "Il Garbage Collector Gira" << "\n";
   if constexpr (force) {
     // We take the unique lock on the main storage lock so we can forcefully clean
     // everything we can
@@ -3636,10 +3637,6 @@ void Storage::CollectGarbage() {
     for (Delta &delta : transaction->deltas) {
       while (true) {
         auto prev = delta.prev.Get();
-        if (prev.vertex != nullptr)
-          std::cout << "Doing:" << std::to_string(prev.vertex->gid.AsInt()) <<"\n";
-        else
-          std::cout << "Non è stato possibile leggere il vertice\n";
         switch (prev.type) {
           case PreviousPtr::Type::VERTEX: {
             Vertex *vertex = prev.vertex;
@@ -3652,8 +3649,6 @@ void Storage::CollectGarbage() {
             vertex->delta = nullptr;
             if (vertex->deleted) {
               current_deleted_vertices.push_back(vertex->gid);
-              auto gids=vertex->gid;
-
             }
             if (vertex->has_vt)
               EncodeIntoVtStore(&delta, vertex);
@@ -3681,7 +3676,6 @@ void Storage::CollectGarbage() {
               // The delta that is newer than this one is also a delta from this
               // transaction. We skip the current delta and will remove it as a
               // part of the suffix later.
-
               breakBefore = true;
             }
             Vertex* vertex = nullptr;

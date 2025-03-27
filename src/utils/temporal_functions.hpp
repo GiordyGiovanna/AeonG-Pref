@@ -237,6 +237,7 @@ namespace utils {
   template<typename T>
   timeline TimelineRetrieval(const TimeSpan &vt, const T& list) {
     timeline result(vt);
+    timeline ret_broke{};
 
     for (const auto &vtlist : list) {
       if (vt.included(vtlist)) {
@@ -287,18 +288,19 @@ namespace utils {
 
     if (timeline.empty()) {
       InsertIntoVector(timeline, std::make_pair(vt, value));
-
       return true;
     }
 
-    auto edit_start = timeline.end() , edit_end = timeline.end(), prev = InitPrev(timeline), delete_start = timeline.end(), delete_end = timeline.end();
+    auto edit_start = timeline.end(), edit_end = timeline.end(), prev = InitPrev(timeline), delete_start = timeline.end(), delete_end = timeline.end();
 
-    bool vt_written = false, deleting = false;
+    bool vt_written = false;
+    bool deleting = false;
     std::vector<std::pair<TimeSpan,V>> v_new;
     v_new.reserve(2);
 
-    for (auto itx = timeline.begin(); itx != timeline.end(); itx++) {
-      utils::VTDateTime itx_start = itx->first.first, itx_end = itx->first.second;
+    for (auto itx = timeline.begin(); itx != timeline.end(); ++itx) {
+      VTDateTime itx_start = itx->first.first;
+      VTDateTime itx_end = itx->first.second;
 
       if (vt.overlaps(itx->first)) {
         if (edit_start == timeline.end()) {
@@ -308,8 +310,6 @@ namespace utils {
           if (itx->second == value) {
             return false;
           }
-
-          write = true;
           V val = itx->second;
 
           if (itx_start < vt.first) {
@@ -344,15 +344,13 @@ namespace utils {
             if (itx->second == value) {
               if (edit_start->second == value)
                 edit_start->first.second = VTDateTime::greater(vt.second, itx_end);
-              //else {
-                if (deleting)
-                  delete_end = itx;
-                else {
-                  deleting = true;
-                  delete_start = itx;
-                  delete_end = itx;
-                }
-              //}
+              if (deleting)
+                delete_end = itx;
+              else {
+                deleting = true;
+                delete_start = itx;
+                delete_end = itx;
+              }
             }else {
               itx->first.first = vt.second;
             }
@@ -448,7 +446,7 @@ namespace utils {
       ReplaceIntoVector(timeline, v_new, delete_start, delete_start == timeline.end() ? edit_start: delete_end );
     }
 
-    return write;
+    return true;
   }
 
   template<typename T, typename V>

@@ -90,7 +90,6 @@ namespace storage {
       std::vector<std::pair<utils::TimeSpan,PropertyValue>> v;
       v.emplace_back(vt, value);
       properties_.emplace(property, std::move(v));
-
       return true;
     }
 
@@ -102,7 +101,6 @@ namespace storage {
       std::vector<std::pair<utils::TimeSpan,PropertyValue>> v;
       v.emplace_back(utils::TimeSpan(), value);
       properties_.emplace(property, std::move(v));
-
       return true;
     }
     return false;
