@@ -190,7 +190,6 @@ namespace utils {
             }
           }
         }
-
       }
 
       if (vt.second <= itx->first) {
@@ -237,7 +236,6 @@ namespace utils {
   template<typename T>
   timeline TimelineRetrieval(const TimeSpan &vt, const T& list) {
     timeline result(vt);
-    timeline ret_broke{};
 
     for (const auto &vtlist : list) {
       if (vt.included(vtlist)) {

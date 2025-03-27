@@ -1139,9 +1139,6 @@ PreparedQuery PrepareCypherQuery(ParsedQuery parsed_query, std::map<std::string,
   }
 
   //hjm end
-
-
-
   auto vt_exprs = plan->getVTHistoryInfo();
   if(vt_exprs) {
     switch (std::get<2>(vt_exprs.value())) {

@@ -79,7 +79,7 @@
   }
 
 namespace history_delta{
-//extern bool TemporalCheck(uint64_t object_ts,uint64_t object_te,uint64_t c_ts,uint64_t c_te,utils::TemporalQueryType type);
+extern bool TemporalCheck(uint64_t object_ts,uint64_t object_te,uint64_t c_ts,uint64_t c_te,utils::TemporalQueryType type);
 extern std::pair<std::vector< std::tuple< std::map<storage::PropertyId,storage::PropertyValue>,uint64_t,uint64_t> >,bool> getDeadInfo2(query::VertexAccessor current_vertex_,uint64_t c_ts,uint64_t c_te,utils::TemporalQueryType types_);
 extern std::pair<std::vector< std::tuple< std::map<storage::PropertyId,storage::PropertyValue>,uint64_t,uint64_t, utils::TimeSpan> >,bool> getDeadInfo2(query::VertexAccessor current_vertex_,uint64_t c_ts,uint64_t c_te,utils::TemporalQueryType types_, const utils::TemporalFilter vt_filter);
 extern  std::vector<std::string> splits(const std::string &str, const std::string &pattern);
@@ -2826,12 +2826,12 @@ storage::HistoryVertex createHistoryVertexFromVertex(VertexAccessor &vertex, con
   for (const auto& ts : object_timeline) {
     values.emplace_back(std::make_pair(ts, storage::PropertyValue(true)));
   }
+
   if (!values.empty()) {
     history_vertex.properties.emplace(accessor.NameToProperty("Vertex.Timeline"), values);
+    history_vertex.properties.emplace(accessor.NameToProperty("TT.start"), storage::PropertyValue(static_cast<int64_t>(vertex.transaction_st())));
+    history_vertex.properties.emplace(accessor.NameToProperty("TT.end"), storage::PropertyValue(std::numeric_limits<int64_t>::max()));
   }
-
-  history_vertex.properties.emplace(accessor.NameToProperty("TT.start"), storage::PropertyValue(static_cast<int64_t>(vertex.transaction_st())));
-  history_vertex.properties.emplace(accessor.NameToProperty("TT.end"), storage::PropertyValue(std::numeric_limits<int64_t>::max()));
 
   auto labels = vertex.Labels(storage::View::NEW);
 
