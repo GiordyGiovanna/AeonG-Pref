@@ -554,7 +554,7 @@ class ScanAllCursor : public Cursor {
         ++vertices_it_.value();
       }  
     }else{
-      if(count==0){
+      if(count == 0){
         context.scan_op_name=op_name_;
         context.input_symbol=output_symbol_;
         count++;
@@ -567,27 +567,20 @@ class ScanAllCursor : public Cursor {
         if (!next_vertices){
           continue;
         }
-        VertexAccessor maybe_vertex = *vertices_it_.value();
-
         ///////// CHECK HERE
+        ///history_delta::check_vertex_valid_time(maybe_vertex, context.addition_vt)
+        // if (VertexAccessor va = *next_vertices.value().begin(); context.addition_vt.has_value() && !history_delta::check_vertex_valid_time(va, context.addition_vt)){
+        //   // ++vertices_it_.value();
+        //   continue;
+        // }
         vertices_.emplace(std::move(next_vertices.value()));
-        if (context.addition_vt.has_value() && maybe_vertex.HasTemporalFeatures()){
-          if (history_delta::check_vertex_valid_time(maybe_vertex, context.addition_vt)) {
-            vertices_it_.emplace(vertices_.value().begin());
-          }
-        } else {
-          vertices_it_.emplace(vertices_.value().begin());
-        }
+        vertices_it_.emplace(vertices_.value().begin());
       }
-      auto maybe_vertex = *vertices_it_.value();
-      // if (context.addition_vt.has_value()){
-      //   if (history_delta::check_vertex_valid_time(maybe_vertex, context.addition_vt)) {
-      //     frame[output_symbol_] = maybe_vertex;
-      //   }
-      // } else {
-      //   frame[output_symbol_] = maybe_vertex;
+
+      // if (auto maybe_vertex = *vertices_it_.value(); context.addition_vt.has_value() && !history_delta::check_vertex_valid_time(maybe_vertex, context.addition_vt)){
+      //   return true;
       // }
-      frame[output_symbol_] = maybe_vertex;
+      frame[output_symbol_] = *vertices_it_.value();
       ++vertices_it_.value();
       return true;
     }
@@ -599,6 +592,7 @@ class ScanAllCursor : public Cursor {
     historyContext_={};
     history_add.clear();
   }
+
   void Reset() override {
     input_cursor_->Reset();
     vertices_ = std::nullopt;
@@ -2797,7 +2791,8 @@ bool Filter::FilterCursor::Pull(Frame &frame, ExecutionContext &context) {
                                 storage::View::OLD);
 
   while (input_cursor_->Pull(frame, context)) {
-    if (EvaluateFilter(evaluator, self_.expression_)) return true;
+    if (EvaluateFilter(evaluator, self_.expression_))
+      return true;
   }
   return false;
 }
@@ -2878,17 +2873,17 @@ bool Produce::ProduceCursor::Pull(Frame &frame, ExecutionContext &context) {
 
     for (int i = 0; i != frame.elems().size(); i++) {
       if (frame.elems()[i].IsVertex()) {
-        auto& vertex = frame.elems()[i].ValueVertex();
-        if (vertex.HasTemporalFeatures())
+        VertexAccessor& vertex = frame.elems()[i].ValueVertex();
+        if (vertex.HasTemporalFeatures() && history_delta::check_vertex_valid_time(vertex, context.addition_vt))
           frame.elems().at(i) = createHistoryVertexFromVertex(vertex, context.addition_vt, *context.db_accessor);
+        else
+          return this->Pull(frame, context);
       }
     }
     return true;
   }
   return false;
 }
-
-
 
 void Produce::ProduceCursor::Shutdown() {
   input_cursor_->Shutdown(); 

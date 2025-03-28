@@ -1,5 +1,3 @@
-match (n {id :4112}) for vt from "-INF" to "1980-01-01T00:00:00.000000" return n
-match (n) for vt from "-INF" to "1980-01-01T00:00:00.000000" return n
 match (n{id:4112}) for vt from "-INF" to "1980-01-01T00:00:00.000000" return n
 match (n) for vt from "-INF" to "1979-01-01T00:00:00.000000" return n
 
