@@ -1201,7 +1201,7 @@ Result<PropertyValue> VertexAccessor::GetProperty(PropertyId property, View view
       case Delta::Action::SET_PROPERTY: {
         if (delta.property.key == property) {
           //value = delta.property.value;
-          res.add({vt_intersection.first,vt_intersection.second}, delta.property.value);
+          res.add({vt_intersection.first, vt_intersection.second}, delta.property.new_value);
         }
         break;
       }
@@ -1229,7 +1229,6 @@ Result<PropertyValue> VertexAccessor::GetProperty(PropertyId property, View view
   if (!exists) return Error::NONEXISTENT_OBJECT;
   if (!for_deleted_ && deleted) return Error::DELETED_OBJECT;
   return std::move(res.get_single(vt.get_span()));
-
 }
 
 Result<std::map<PropertyId, PropertyValue>> VertexAccessor::Properties(View view) const {

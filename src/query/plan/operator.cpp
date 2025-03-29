@@ -2791,6 +2791,10 @@ bool Filter::FilterCursor::Pull(Frame &frame, ExecutionContext &context) {
                                 storage::View::OLD);
 
   while (input_cursor_->Pull(frame, context)) {
+    ///// QUI
+    VertexAccessor& vertex = frame.elems()[1].ValueVertex();
+    if (context.addition_vt.has_value() && !history_delta::check_vertex_valid_time(vertex, context.addition_vt))
+      return false;
     if (EvaluateFilter(evaluator, self_.expression_))
       return true;
   }
