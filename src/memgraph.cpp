@@ -1144,7 +1144,7 @@ int main(int argc, char **argv) {
 
   // Main storage and execution engines initialization
   storage::Config db_config{
-      .gc = {.type = storage::Config::Gc::Type::PERIODIC, .interval = std::chrono::hours(1)},
+      .gc = {.type = storage::Config::Gc::Type::PERIODIC, .interval = std::chrono::seconds(1)},
       .items = {.properties_on_edges = FLAGS_storage_properties_on_edges,
                 .AnchorNum=FLAGS_anchor_num,
                 .realTimeFlag=FLAGS_real_time_flag},

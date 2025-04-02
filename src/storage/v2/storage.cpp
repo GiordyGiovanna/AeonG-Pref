@@ -3434,7 +3434,6 @@ void Storage::CollectGarbage() {
     std::list<std::tuple<Gid,uint64_t,uint64_t>> saved_gids;
 
 
-
     for (Delta &a : transaction->deltas){
       uint64_t start=a.transaction_st;
       uint64_t commit=a.commit_timestamp;
@@ -3707,16 +3706,13 @@ void Storage::CollectGarbage() {
             if (vertex != nullptr && vertex->has_vt)
               EncodeIntoVtStore(&delta, vertex);
             if (edge != nullptr && edge->has_vt)
-              EncodeIntoVtStore(&delta,edge);
-
-            if (breakBefore)
-              break;
+              EncodeIntoVtStore(&delta, edge);
 
             Delta *prev_delta = prev.delta;
             prev_delta->next.store(nullptr, std::memory_order_release);
 
-
-
+            // if (breakBefore)
+            //   break;
             break;
           }
           case PreviousPtr::Type::NULLPTR: {

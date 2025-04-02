@@ -1,6 +1,3 @@
-match (n{id:4112}) for vt from "-INF" to "1980-01-01T00:00:00.000000" return n
-match (n) for vt from "-INF" to "1979-01-01T00:00:00.000000" return n
-
 CREATE (:User {id: 4112, completion_percentage: 14, gender: "man", age: 26}) FOR VT FROM "-INF" TO "1980-01-01T00:00:00";
 CREATE (:User {id: 4113, completion_percentage: 62, gender: "woman", age: 0}) FOR VT FROM "1980-01-01T00:00:00" TO "1984-07-01T00:00:00";
 CREATE (:User {id: 1075, completion_percentage: 38, gender: "man", age: 29}) FOR VT FROM "1984-07-01T00:00:00" TO "1989-01-01T00:00:00";

@@ -127,6 +127,9 @@ namespace utils {
     if (from_to.included((*it)->first))
       return (*it)->second;
 
+    if (from_to.overlaps((*it)->first))
+      return (*it)->second;
+
     return T();
   }
 

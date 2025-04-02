@@ -97,7 +97,8 @@ class Memgraph:
         if self._proc_mg is not None:
             raise Exception("The database process is already running!")
         args = self._get_args(**kwargs)
-        # print("_start",args)
+        print("_start",args)
+        #print("self._proc_mg", self._proc_mg)
         self._proc_mg = subprocess.Popen(args, stdout=subprocess.DEVNULL)  # subprocess.PIPE subprocess.DEVNULL
         time.sleep(0.2)
         if self._proc_mg.poll() is not None:
@@ -297,8 +298,8 @@ class Client:
                     print("query", query)
 
         args = self._get_args(input=file_path, num_workers=num_workers,
-                              queries_json=queries_json, max_retries=10000, port=self._port, output_stdout = self._output_stdout)
-        # print("args:",args)
+                              queries_json=queries_json, max_retries=5, port=self._port, output_stdout = self._output_stdout)
+        #print("args:",args)
         ret = subprocess.run(args, stdout=subprocess.PIPE, check=True)
         data = ret.stdout.decode("utf-8").strip().split("\n")
         lists = list()

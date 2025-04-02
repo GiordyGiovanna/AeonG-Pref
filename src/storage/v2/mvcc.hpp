@@ -104,7 +104,7 @@ inline void ApplyDeltasForRead(Transaction *transaction, const Delta *delta, Vie
     bool skip_delta = transaction->isolation_level == IsolationLevel::SNAPSHOT_ISOLATION && ts < transaction->start_timestamp;
     skip_delta = skip_delta || transaction->isolation_level == IsolationLevel::READ_COMMITTED && ts < kTransactionInitialId;
     skip_delta = skip_delta || transaction->isolation_level == IsolationLevel::READ_UNCOMMITTED;
-    skip_delta = skip_delta && delta->action != Delta::Action::SET_PROPERTY;
+    skip_delta = skip_delta && (delta->action != Delta::Action::SET_PROPERTY);
     if (skip_delta) {
       break;
     }

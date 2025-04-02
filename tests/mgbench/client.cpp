@@ -181,8 +181,8 @@ std::pair<std::map<std::string, communication::bolt::Value>, uint64_t> ExecuteNT
   for (uint64_t i = 0; i < max_attempts; ++i) {
     try {
       auto ret = client->Execute(query, params);
-
-      if (output) {
+      int myI = 0;
+      if (false) {
         std::cout<<"Size: " << ret.records.size() << "\n";
 
         std::cout<<"Fields: " << ret.fields.size() << "\n";
@@ -195,10 +195,9 @@ std::pair<std::map<std::string, communication::bolt::Value>, uint64_t> ExecuteNT
           for (auto k: j){
             std::cout<<bolt_value_to_string(k)<<" - ";
           }
-          std::cout<<"\n";
+          std::cout << myI++ <<" \n";
         }
       }
-
 
       return {std::move(ret.metadata), i};
     } catch (const utils::BasicException &e) {
