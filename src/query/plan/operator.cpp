@@ -567,19 +567,9 @@ class ScanAllCursor : public Cursor {
         if (!next_vertices){
           continue;
         }
-        ///////// CHECK HERE
-        ///history_delta::check_vertex_valid_time(maybe_vertex, context.addition_vt)
-        // if (VertexAccessor va = *next_vertices.value().begin(); context.addition_vt.has_value() && !history_delta::check_vertex_valid_time(va, context.addition_vt)){
-        //   // ++vertices_it_.value();
-        //   continue;
-        // }
         vertices_.emplace(std::move(next_vertices.value()));
         vertices_it_.emplace(vertices_.value().begin());
       }
-
-      // if (auto maybe_vertex = *vertices_it_.value(); context.addition_vt.has_value() && !history_delta::check_vertex_valid_time(maybe_vertex, context.addition_vt)){
-      //   return true;
-      // }
       frame[output_symbol_] = *vertices_it_.value();
       ++vertices_it_.value();
       return true;
@@ -2791,11 +2781,6 @@ bool Filter::FilterCursor::Pull(Frame &frame, ExecutionContext &context) {
                                 storage::View::OLD);
 
   while (input_cursor_->Pull(frame, context)) {
-    if (frame.elems()[1].IsVertex())   {
-      VertexAccessor& vertex = frame.elems()[1].ValueVertex();
-      if (context.addition_vt.has_value() && !history_delta::check_vertex_valid_time(vertex, context.addition_vt))
-        return false;
-    }
     if (EvaluateFilter(evaluator, self_.expression_))
       return true;
   }
@@ -2831,20 +2816,22 @@ Produce::ProduceCursor::ProduceCursor(const Produce &self, utils::MemoryResource
 
 storage::HistoryVertex createHistoryVertexFromVertex(VertexAccessor &vertex, const utils::TemporalFilter &filter, DbAccessor &accessor) {
   storage::HistoryVertex history_vertex;
-  for (const auto props : vertex.PropertiesVt(storage::View::NEW, filter)) {
-    std::vector<storage::PropertyValue> values;
-    for (const auto& props_timespans: props.second) {
-      if (props_timespans.second == storage::PropertyValue())
-        continue;
-      values.emplace_back(props_timespans);
-    }
-    if (!values.empty()) {
-      history_vertex.properties.emplace(props.first, values);
+  auto props_in_vt = vertex.PropertiesVt(storage::View::NEW, filter);
+  if (!props_in_vt.empty()) {
+    for (const auto props : props_in_vt) {
+      std::vector<storage::PropertyValue> values;
+      for (const auto& props_timespans: props.second) {
+        if (props_timespans.second == storage::PropertyValue())
+          continue;
+        values.emplace_back(props_timespans);
+      }
+      if (!values.empty()) {
+        history_vertex.properties.emplace(props.first, values);
+      }
     }
   }
 
   utils::timeline object_timeline = vertex.ObjectVt(storage::View::NEW, filter).GetValue();
-
   std::vector<storage::PropertyValue> values;
   for (const auto& ts : object_timeline) {
     values.emplace_back(std::make_pair(ts, storage::PropertyValue(true)));
@@ -2879,10 +2866,18 @@ bool Produce::ProduceCursor::Pull(Frame &frame, ExecutionContext &context) {
     for (int i = 0; i != frame.elems().size(); i++) {
       if (frame.elems()[i].IsVertex()) {
         VertexAccessor& vertex = frame.elems()[i].ValueVertex();
-        if (vertex.HasTemporalFeatures() && history_delta::check_vertex_valid_time(vertex, context.addition_vt))
-          frame.elems().at(i) = createHistoryVertexFromVertex(vertex, context.addition_vt, *context.db_accessor);
+        if (!vertex.HasTemporalFeatures())
+          continue;
+        auto historic_vertex = createHistoryVertexFromVertex(vertex, context.addition_vt, *context.db_accessor);
+        if (!historic_vertex.properties.empty()) {
+          frame.elems().at(i) = historic_vertex;
+        }
         else
           return this->Pull(frame, context);
+        //
+        // if (vertex.HasTemporalFeatures() && history_delta::check_vertex_valid_time(vertex, context.addition_vt))
+        //   frame.elems().at(i) = createHistoryVertexFromVertex(vertex, context.addition_vt, *context.db_accessor);
+        // else
       }
     }
     return true;

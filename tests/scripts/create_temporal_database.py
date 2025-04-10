@@ -116,7 +116,7 @@ if __name__ == "__main__":
                         help="directory path where temporal data should "
                              "be stored")
     parser.add_argument("--original-dataset-cypher-path",
-                        default=helpers.get_binary_path("../tests/datasets/T-mgBench/small.cypher"),
+                        default=helpers.get_binary_path("../tests/datasets/T-mgBench2/cypher.txt"),
                         help="directory path where temporal data should "
                              "be stored")
     parser.add_argument("--index-cypher-path",

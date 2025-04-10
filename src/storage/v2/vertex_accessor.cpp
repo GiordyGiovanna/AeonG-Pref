@@ -228,7 +228,6 @@ Result<bool> VertexAccessor::AddLabel(LabelId label) {
             transaction_->gid_anchor_vertex_[std::make_pair(vertex_->gid,ts)]=std::make_pair(maybe_properties,maybe_labels);
           }
         }
-      }else{
       }
       printf=true;
     }
@@ -304,7 +303,6 @@ Result<bool> VertexAccessor::AddLabel(LabelId label, const utils::TimeSpan& vt) 
             transaction_->gid_anchor_vertex_[std::make_pair(vertex_->gid,ts)]=std::make_pair(maybe_properties,maybe_labels);
           }
         }
-      }else{
       }
       printf=true;
     }
@@ -324,12 +322,12 @@ Result<bool> VertexAccessor::AddLabel(LabelId label, const utils::TimeSpan& vt) 
     return false;
 
   for (const auto& vti: vt_range_label) {
-    auto delta=CreateAndLinkDelta(transaction_, vertex_, vti, vt, Delta::RemoveLabelTag(), label);
+    auto delta = CreateAndLinkDelta(transaction_, vertex_, vti, vt, Delta::RemoveLabelTag(), label);
     delta->transaction_st = ts;
     n_deltas++;
   }
 
-  n_deltas += ExtendValidity(vt, ts);
+  // n_deltas += ExtendValidity(vt, ts);
 
   if (std::find(vertex_->labels.begin(), vertex_->labels.end(), label) == vertex_->labels.end())
     vertex_->labels.push_back(label);
@@ -790,7 +788,6 @@ Result<PropertyValue> VertexAccessor::SetProperty(PropertyId property, const Pro
             transaction_->gid_anchor_vertex_[std::make_pair(vertex_->gid,ts)]=std::make_pair(maybe_properties,maybe_labels);
           }
         }
-      }else{
       }
       printf=true;
     }
@@ -869,7 +866,6 @@ Result<PropertyValue> VertexAccessor::SetProperty(PropertyId property, const Pro
             transaction_->gid_anchor_vertex_[std::make_pair(vertex_->gid,ts)]=std::make_pair(maybe_properties,maybe_labels);
           }
         }
-      }else{
       }
       printf=true;
     }
@@ -906,7 +902,7 @@ Result<PropertyValue> VertexAccessor::SetProperty(PropertyId property, const Pro
       current_value_x = current_value;
   }
 
-  n_deltas += ExtendValidity(vt, ts);
+  // n_deltas += ExtendValidity(vt, ts);
 
   if (TemporalFlagSet(vertex_, vt, n_deltas))
     vertex_->get_vt_store().InitProperty(property, vertex_->properties.GetProperty(property));
@@ -1222,11 +1218,11 @@ Result<PropertyValue> VertexAccessor::GetProperty(PropertyId property, View view
     }
   });
 
-  exists = vt_range_obj.has_any();
-  deleted = !exists;
-
-  if (!exists) return Error::NONEXISTENT_OBJECT;
-  if (!for_deleted_ && deleted) return Error::DELETED_OBJECT;
+  // Comment cause: It's no longer a problem if a vertex does not have properties in a certain vt
+  // exists = vt_range_obj.has_any();
+  // deleted = !exists;
+  // if (!exists) return Error::NONEXISTENT_OBJECT;
+  // if (!for_deleted_ && deleted) return Error::DELETED_OBJECT;
   return std::move(res.get_single(vt.get_span()));
 }
 
@@ -1296,7 +1292,6 @@ Result<std::map<PropertyId, PropertyValue>> VertexAccessor::Properties(View view
 
   for (auto& property : vertex_->get_vt_store().Properties()) {
     utils::valued_timeline<PropertyValue> vt_range_prop = PropertyTimeline(property, vt.get_span());
-
     properties.emplace(property, vt_range_prop);
   }
   utils::timeline vt_range_obj = vertex_->get_vt_store().GetObjectValidity(vt.get_span());
@@ -1352,7 +1347,6 @@ Result<std::map<PropertyId, PropertyValue>> VertexAccessor::Properties(View view
 }
 
 std::map<PropertyId, utils::valued_timeline<PropertyValue>> VertexAccessor::AllPropertiesTimeline(View view, const utils::TemporalFilter& vt) const {
-  bool exists = true;
   bool deleted = false;
   Delta *delta = nullptr;
   {
@@ -1364,19 +1358,20 @@ std::map<PropertyId, utils::valued_timeline<PropertyValue>> VertexAccessor::AllP
   std::map<PropertyId, utils::valued_timeline<PropertyValue>> properties;
 
   for (auto& property : vertex_->get_vt_store().Properties()) {
-    utils::valued_timeline<PropertyValue> vt_range_prop = PropertyTimeline(property, vt.get_span());
-    properties.emplace(property, vt_range_prop);
+    utils::valued_timeline<PropertyValue> vt_range_prop = PropertyTimeline(property, vt.get_span(), true);
+    if (vt_range_prop.has_any())
+      properties.emplace(property, vt_range_prop);
   }
 
-  for (auto& property : vertex_->properties.Properties()) {
-    if (properties.find(property.first) == properties.end()) {
-      utils::valued_timeline<PropertyValue> vt;
-      if (vertex_->delta == nullptr) {
-        vt.add(utils::TimeSpan(utils::VTDateTime::max(), utils::VTDateTime::max()), property.second);
-      }
-      properties.emplace(property.first, vt);
-    }
-  }
+  // for (auto& property : vertex_->properties.Properties()) {
+  //   if (!properties.contains(property.first)) {
+  //     utils::valued_timeline<PropertyValue> vt;
+  //     if (vertex_->delta == nullptr && vertex_->has_vt) {
+  //       vt.add(utils::TimeSpan(utils::VTDateTime::max(), utils::VTDateTime::max()), property.second);
+  //     }
+  //     properties.emplace(property.first, vt);
+  //   }
+  // }
 
   utils::timeline vt_range_obj = vertex_->get_vt_store().GetObjectValidity(vt.get_span());
 
@@ -1421,11 +1416,9 @@ std::map<PropertyId, utils::valued_timeline<PropertyValue>> VertexAccessor::AllP
         break;
     }
   });
-  exists = vt_range_obj.has_any();
-  deleted = !exists;
 
   for (auto& property : properties) {
-    if (!property.second.has_any())
+    if (!property.second.has_any() && vertex_->has_vt)
       properties.erase(property.first);
   }
 
@@ -1868,15 +1861,15 @@ Result<size_t> VertexAccessor::OutDegree(View view) const {
   return degree;
 }
 
-utils::valued_timeline<storage::PropertyValue> VertexAccessor::PropertyTimeline(storage::PropertyId property_id,  const utils::TimeSpan &vt) const {
+utils::valued_timeline<storage::PropertyValue> VertexAccessor::PropertyTimeline(storage::PropertyId property_id,  const utils::TimeSpan &vt, bool not_retrieve_vt_out) const {
   utils::valued_timeline<storage::PropertyValue> coverage(vt);
 
   coverage = vertex_->get_vt_store().GetProperty(property_id, vt);
-  if (!coverage.has_any()) {
+  if (!coverage.has_any() && !not_retrieve_vt_out) {
     coverage.add(vt, vertex_->properties.GetProperty(property_id));
   }
 
-  auto before_delta= vertex_->delta;
+  auto before_delta = vertex_->delta;
 
   while (before_delta != nullptr){
     switch (before_delta->action) {
@@ -1901,7 +1894,7 @@ utils::timeline VertexAccessor::LabelTimeline(storage::LabelId label_id, const u
     coverage.add(vt);
   }
 
-  auto before_delta= vertex_->delta;
+  auto before_delta = vertex_->delta;
   while (before_delta != nullptr){
     switch (before_delta->action) {
       case storage::Delta::Action::ADD_LABEL: {
@@ -1922,59 +1915,4 @@ utils::timeline VertexAccessor::LabelTimeline(storage::LabelId label_id, const u
   }
   return coverage;
 }
-
-int VertexAccessor::ExtendValidity(const utils::TimeSpan& vt, uint64_t ts) {
-  utils::TemporalFilter tf;
-  tf.first = vt.first;
-  tf.second = vt.second;
-  tf.type = utils::TemporalQueryType::FROM_TO;
-
-  utils::timeline vt_range_obj = vertex_->get_vt_store().GetObjectValidity(vt);
-
-  ApplyDeltasForRead(transaction_, vertex_->delta, View::NEW, tf, [&vt_range_obj](const Delta &delta, utils::TimeSpan vt_intersection) {
-    switch (delta.action) {
-      case Delta::Action::SET_PROPERTY: {
-
-        break;
-      }
-      case Delta::Action::DELETE_OBJECT: {
-        vt_range_obj.remove(vt_intersection);
-        break;
-      }
-      case Delta::Action::RECREATE_OBJECT: {
-        vt_range_obj.add(vt_intersection);
-        break;
-      }
-      case Delta::Action::ADD_LABEL:
-      case Delta::Action::REMOVE_LABEL:
-      case Delta::Action::ADD_IN_EDGE:
-      case Delta::Action::ADD_OUT_EDGE:
-      case Delta::Action::REMOVE_IN_EDGE:
-      case Delta::Action::REMOVE_OUT_EDGE:
-        break;
-    }
-  });
-
-  return ExtendValidity(vt, vt_range_obj, ts);
-}
-
-int VertexAccessor::ExtendValidity(const utils::TimeSpan& vt, utils::timeline object_timeline, uint64_t ts) {
-  if (object_timeline.covered(vt))
-    return 0;
-
-  auto vt_range_obj = object_timeline.split(vt).invert();
-  int n_deltas = 0;
-
-  for (const auto& vti: vt_range_obj) {
-    auto delta=CreateAndLinkDelta(transaction_, vertex_, vti, vt, Delta::DeleteObjectTag());
-
-    delta->transaction_st=ts;
-    //save vertex to restore
-
-    n_deltas++;
-  }
-
-  return n_deltas;
-}
-
 }  // namespace storage

@@ -48,7 +48,7 @@ class HistoryDelta final {
   std::pair<std::vector<nlohmann::json>,bool> GetVertexInfo(storage::Gid gid,uint64_t c_ts,uint64_t c_te,utils::TemporalQueryType type);
   std::pair<std::vector<nlohmann::json>,bool> GetVertexInfo(storage::Gid gid,uint64_t c_ts,uint64_t c_te,utils::TemporalQueryType type, const utils::TemporalFilter& filter);
 
-  std::pair<std::vector<nlohmann::json>,bool> GetEdgeInfo(uint64_t c_ts,uint64_t c_te,utils::TemporalQueryType type,uint64_t gid);
+  std::pair<std::vector<nlohmann::json>,bool>   GetEdgeInfo(uint64_t c_ts,uint64_t c_te,utils::TemporalQueryType type,uint64_t gid);
   std::pair<std::vector<nlohmann::json>,bool> GetEdgeInfo(storage::Gid gid, uint64_t c_ts,uint64_t c_te,utils::TemporalQueryType type, const utils::TemporalFilter& filter);
 
   std::vector<nlohmann::json> GetDeleteEdgeInfo(uint64_t c_ts,uint64_t c_te,utils::TemporalQueryType type,uint64_t gid);

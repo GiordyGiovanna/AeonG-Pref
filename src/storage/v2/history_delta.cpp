@@ -364,8 +364,6 @@ HistoryDelta::HistoryDelta(const std::string &storage_directory,bool realTimeFla
   realTimeFlagConstant=realTimeFlag;
 }
 
-
-
 std::pair<std::vector<nlohmann::json>,bool> HistoryDelta::GetEdgeInfo(uint64_t c_ts,uint64_t c_te,utils::TemporalQueryType type,uint64_t gid) {
   std::vector<nlohmann::json> history_Delta;
   bool anchor_flag=false;

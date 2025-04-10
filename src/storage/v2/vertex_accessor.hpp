@@ -212,12 +212,9 @@ class VertexAccessor final {
   // return an error if it's called for a deleted vertex.
   bool for_deleted_{false};
 
-  utils::valued_timeline<storage::PropertyValue> PropertyTimeline(storage::PropertyId property_id, const utils::TimeSpan& vt) const;
+  utils::valued_timeline<storage::PropertyValue> PropertyTimeline(storage::PropertyId property_id, const utils::TimeSpan& vt, bool not_retrieve_vt_out = false) const;
 
   utils::timeline LabelTimeline(storage::LabelId label_id, const utils::TimeSpan& vt) const;
-
-  int ExtendValidity(const utils::TimeSpan& vt, uint64_t ts);
-  int ExtendValidity(const utils::TimeSpan &vt, utils::timeline object_timeline, uint64_t ts);
 };
 
 }  // namespace storage

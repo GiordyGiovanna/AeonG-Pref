@@ -1178,7 +1178,6 @@ PreparedQuery PrepareCypherQuery(ParsedQuery parsed_query, std::map<std::string,
     interpreter_context->vt = utils::TemporalFilter();
   }
 
-
   evaluation_context.vt = *interpreter_context->vt;
 
   summary->insert_or_assign("cost_estimate", plan->cost());
